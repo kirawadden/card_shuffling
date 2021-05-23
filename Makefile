@@ -1,4 +1,4 @@
-CFLAGS = -std=c99 -g -Wall 
+CFLAGS = -std=c99 -g -Wall -O3
 CC=clang
 
 default: all

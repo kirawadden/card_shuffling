@@ -8,74 +8,84 @@
 static unsigned long num_cards;
 static unsigned long num_piles;
 
-typedef struct node node;
+typedef struct card card;
 
-struct node
+double times[2];
+struct timeval timeCounter;
+
+card* make_card(int val);
+card* make_deck(void);
+int shuffle_cards(card* deck);
+
+struct card
 {
     int val;
-    node* next;
+    card* next;
 };
 
-node* make_deck(void)
+card* make_card(int val)
 {
-    node* head = NULL;
-    node* temp = NULL;
-
-    // put the cards into a deck
-    for (int i = 0; i < num_cards; i++)
-    {
-        node* card = malloc(sizeof(node));
-        card->val = i+1;
-        card->next = NULL;
-        if (i == 0)
-        {
-            head = card;
-            temp = card;
-            continue;
-        }
-        temp->next = card;
-        temp = card;
-    }
-    return head;
+    card* c = malloc(sizeof(card));
+    c->val = val;
+    c->next = NULL;
+    return c;
 }
 
-int shuffle_cards(node* head)
+card* make_deck(void)
 {
-    if (!head) return -1;
+    card* deck = NULL;
+    card* temp = NULL;
+
+    card* c = make_card(1);
+    deck = c;
+    temp = c;
+    // put the cards into a deck
+    for (int i = 1; i < num_cards; i++)
+    {
+        card* c = make_card(i+1);
+        temp->next = c;
+        temp = c;
+    }
+    return deck;
+}
+
+int shuffle_cards(card* deck)
+{
+    if (!deck) return -1;
     unsigned long rounds = 0;
     bool in_order = false;
 
     while (!in_order)
     {
-        node* temp = NULL;
+        card* temp = NULL;
         // create a "ring buffer" to keep track of the references to the head + tails of piles of cards
         // first half of the buffer is the heads, second half is the tails
-        node* head_tail_buf[num_piles*2];
+        card* head_tail_buf[num_piles*2];
         memset(head_tail_buf, 0, sizeof(head_tail_buf));
 
         int pile = 0;
 
         // shuffle the cards into piles
-        while (head != NULL)
+        while (deck)
         {
-            if (head_tail_buf[pile] != NULL)
+            if (head_tail_buf[pile])
             {
                 temp = head_tail_buf[pile];
             }
             else
             {
                 // assign tail
-                head_tail_buf[pile + num_piles] = head;
+                head_tail_buf[pile + num_piles] = deck;
             }
-            head_tail_buf[pile] = head;
-            head = head->next;
+            head_tail_buf[pile] = deck;
+            deck = deck->next;
             head_tail_buf[pile]->next = temp;
             pile = (pile + 1) % num_piles;
             temp = NULL;
         }
 
         // assign head to the top pile
-        head = head_tail_buf[0];
+        deck = head_tail_buf[0];
 
         // stack the piles
         for (int i = 0; i < num_piles - 1; i++)
@@ -84,7 +94,7 @@ int shuffle_cards(node* head)
         }
 
         rounds++;
-        temp = head;
+        temp = deck;
 
         // sanity check - iterate through all cards to check if they're in order
         for (int i = 0; i < num_cards; i++)
@@ -120,40 +130,39 @@ int main(int argc, char** argv)
             num_piles = strtoul(optarg, NULL, 10);
             break;
         default:
-            printf("Unknown option - abort\n");
-            return -1;
+            return EXIT_FAILURE;
         }
     }
 
     if (num_cards <= 0 || num_piles <= 0)
     {
         printf("Number of cards and piles must be greater than zero\n");
-        return -1;
+        return EXIT_FAILURE;
     }
     else if (num_cards < num_piles)
     {
         printf("Number of cards must be greater than or equal to number of piles\n");
-        return -1;
+        return EXIT_FAILURE;
     }
     else if (num_cards == num_piles)
     {
         printf("Number of rounds to return to original order: %lu\n", num_cards);
-        return 0;
+        return EXIT_SUCCESS;
     }
 
-    node* deck = make_deck();
+    card* deck = make_deck();
 
     unsigned long nrounds = shuffle_cards(deck);
     printf("Number of rounds = %lu\n", nrounds);
 
     // free memory
-    node* temp = deck;
-    while (temp != NULL)
+    card* temp = deck;
+    while (temp)
     {
-        node* t2 = temp;
+        card* t2 = temp;
         temp = temp->next;
         free(t2);
     }
 
-    return 0;
+    return EXIT_SUCCESS;
 }
