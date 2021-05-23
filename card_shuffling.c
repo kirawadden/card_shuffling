@@ -18,17 +18,91 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdbool.h>
+#include <signal.h>
 
 static unsigned long num_cards;
 static unsigned long num_piles;
 
 typedef struct node node;
 
+unsigned long rounds = 0;
+
+void handler(int i)
+{
+    printf("Rounds completed %lu\n", rounds);
+    exit(1);
+}
+
 struct node
 {
     int val;
     node* next;
 };
+
+int shuffle_cards(node* head)
+{
+    if (!head) return -1;
+    // static unsigned long rounds = 0;
+    bool in_order = false;
+
+    while (!in_order)
+    {
+        node* temp = NULL;
+        // create a "ring buffer" to keep track of the references to the head + tails of piles of cards
+        // first half of the buffer is the heads, second half is the tails
+        node* head_tail_buf[num_piles*2];
+        memset(head_tail_buf, 0, sizeof(head_tail_buf));
+
+        int pile = 0;
+
+        // shuffle the cards into piles
+        while (head != NULL)
+        {
+            if (head_tail_buf[pile] != NULL)
+            {
+                temp = head_tail_buf[pile];
+            }
+            else
+            {
+                // assign tail
+                head_tail_buf[pile + num_piles] = head;
+            }
+            head_tail_buf[pile] = head;
+            head = head->next;
+            head_tail_buf[pile]->next = temp;
+            pile = (pile + 1) % num_piles;
+            temp = NULL;
+        }
+
+        // assign head to the top pile
+        head = head_tail_buf[0];
+
+        // stack the piles
+        for (int i = 0; i < num_piles - 1; i++)
+        {
+            head_tail_buf[i + num_piles]->next = head_tail_buf[i + 1];
+        }
+
+        rounds++;
+        temp = head;
+
+        // sanity check - cards should only be in order once card 1 is back on top of the pile
+        // iterate through all cards to check
+        for (int i = 0; i < num_cards; i++)
+        {
+            if (temp->val == (i+1)) in_order = true;
+            else
+            {
+                in_order = false;
+                break;
+            }
+            temp = temp->next;
+        }
+    }
+    return rounds;
+
+}
 
 int main(int argc, char** argv)
 {
@@ -37,8 +111,7 @@ int main(int argc, char** argv)
         printf("Usage: %s -N <number of cards> -Y <number of piles>\n", argv[0]);
         return -1;
     }
-    // num_cards = 0;
-    // num_piles = 0;
+
     int c = 0;
     while ((c = getopt(argc, argv, "N:Y:")) != - 1)
     {
@@ -50,11 +123,11 @@ int main(int argc, char** argv)
             num_piles = strtoul(optarg, NULL, 10);
             break;
         default:
-            printf("Unknown option\n");
+            printf("Unknown option - abort\n");
             return -1;
         }
     }
-    printf("N: %lu, Y: %lu\n", num_cards, num_piles);
+
     if (num_cards <= 0 || num_piles <= 0)
     {
         printf("Number of cards and piles must be greater than zero\n");
@@ -68,87 +141,42 @@ int main(int argc, char** argv)
     else if (num_cards == num_piles)
     {
         printf("Number of rounds to return to original order: %lu\n", num_cards);
+        return 0;
     }
+
+    signal(SIGINT, handler);
 
     node* head = NULL;
-    node* tail = NULL;
-
     node* temp = NULL;
 
-
+    // put the cards into a deck
     for (int i = 0; i < num_cards; i++)
     {
-        node* list_node = malloc(sizeof(node));
-        list_node->val = i+1;
-        printf("Creating node i: %d\n", list_node->val);
-        list_node->next = NULL;
+        node* card = malloc(sizeof(node));
+        card->val = i+1;
+        card->next = NULL;
         if (i == 0)
         {
-            head = list_node;
+            head = card;
+            temp = card;
+            continue;
         }
-        else
-        {
-            temp->next = list_node;
-            tail = list_node;
-        }
-        temp = list_node;
+        temp->next = card;
+        temp = card;
     }
+    unsigned long nrounds = shuffle_cards(head);
 
-    // create a "ring buffer" to keep track of head + tails of LL stacks
-    node* head_buf[num_piles];
-    memset(head_buf, 0, sizeof(node)*num_piles);
-    // printf("memset\n");
-
-   
-    int pile = 0;
-    temp = NULL;
-    // if (head_buf[0] == NULL) printf("It's null\n");
-    while (head != NULL)
-    {
-        if (head_buf[pile] != NULL)
-        {
-            temp = head_buf[pile];
-        }
-        // else
-        // {
-        //     // assign tail
-        //     printf("assign tail\n");
-        //     head_buf[pile + num_piles] = head;
-        // }
-        head_buf[pile] = head;
-        head = head->next;
-        head_buf[pile]->next = temp;
-        pile = (pile + 1) % num_piles;
-    }
-    printf("Stack piles complete\n");
-    // printf("Tails for piles 1, 2, 3: %d, %d, %d\n", head_buf[3]->val, head_buf[4]->val, head_buf[5]->val);
-    temp = head_buf[0];
+    // free memory
+    temp = head;
     while (temp != NULL)
     {
-        printf("Pile 1 value -> %d\n", temp->val);
         node* t2 = temp;
+        // printf("%d\n", temp->val);
         temp = temp->next;
         free(t2);
     }
 
-    temp = head_buf[1];
-    while (temp != NULL)
-    {
-        printf("Pile 2 value -> %d\n", temp->val);
-        node* t2 = temp;
-        temp = temp->next;
-        free(t2);
-    }
-
-    temp = head_buf[2];
-    while (temp != NULL)
-    {
-        printf("Pile 3 value -> %d\n", temp->val);
-        node* t2 = temp;
-        temp = temp->next;
-        free(t2);
-    }
-
+    printf("Number of rounds = %lu\n", nrounds);
     return 0;
 }
 
