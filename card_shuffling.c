@@ -5,14 +5,11 @@
 #include <string.h>
 #include <stdbool.h>
 
-static unsigned long num_cards;
-static unsigned long num_piles;
-
 typedef struct card card;
 
 card* make_card(int val);
-card* make_deck(void);
-int shuffle_cards(card* deck);
+card* make_deck(int32_t num_cards);
+int shuffle_cards(card* deck, int32_t num_cards, int32_t num_piles);
 
 struct card
 {
@@ -20,6 +17,7 @@ struct card
     card* next;
 };
 
+// Helper function to allocate card memory. Memory must be freed by caller
 card* make_card(int val)
 {
     card* c;
@@ -29,7 +27,7 @@ card* make_card(int val)
     return c;
 }
 
-card* make_deck(void)
+card* make_deck(int32_t num_cards)
 {
     card* deck = NULL;
     card* temp = NULL;
@@ -47,7 +45,7 @@ card* make_deck(void)
     return deck;
 }
 
-int shuffle_cards(card* deck)
+int shuffle_cards(card* deck, int32_t num_cards, int32_t num_piles)
 {
     unsigned long rounds = 0;
     bool in_order = false;
@@ -113,10 +111,13 @@ int shuffle_cards(card* deck)
 
 int main(int argc, char** argv)
 {
+    // Use signed integers to catch if user inputted negative numbers as arguments
+    int32_t num_cards;
+    int32_t num_piles;
     int c = 0;
     card* deck;
-    unsigned long nrounds;
     card* temp;
+    unsigned long nrounds;
 
     if (argc == 1)
     {
@@ -128,10 +129,10 @@ int main(int argc, char** argv)
     {
         switch(c) {
         case 'N':
-            num_cards = strtoul(optarg, NULL, 10);
+            num_cards = atoi(optarg);
             break;
         case 'Y':
-            num_piles = strtoul(optarg, NULL, 10);
+            num_piles = atoi(optarg);
             break;
         default:
             return EXIT_FAILURE;
@@ -150,13 +151,13 @@ int main(int argc, char** argv)
     }
     else if (num_cards == num_piles)
     {
-        printf("Number of rounds to return to original order: %lu\n", num_cards);
+        printf("Number of rounds to return to original order: %d\n", num_cards);
         return EXIT_SUCCESS;
     }
 
-    deck = make_deck();
+    deck = make_deck(num_cards);
 
-    nrounds = shuffle_cards(deck);
+    nrounds = shuffle_cards(deck, num_cards, num_piles);
     printf("Number of rounds = %lu\n", nrounds);
 
     // free memory
