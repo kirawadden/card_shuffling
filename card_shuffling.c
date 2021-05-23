@@ -5,11 +5,15 @@
 #include <string.h>
 #include <stdbool.h>
 
+#define MIN_NUM_PILES 3
+#define MAX_NUM_PILES 5
+#define MAX_DECK_SIZE 52
+
 typedef struct card card;
 
 card* make_card(int val);
 card* make_deck(int32_t num_cards);
-int shuffle_cards(card* deck, int32_t num_cards, int32_t num_piles);
+int shuffle_cards(card* deck, int32_t num_cards);
 
 struct card
 {
@@ -45,18 +49,19 @@ card* make_deck(int32_t num_cards)
     return deck;
 }
 
-int shuffle_cards(card* deck, int32_t num_cards, int32_t num_piles)
+int shuffle_cards(card* deck, int32_t num_cards)
 {
     unsigned long rounds = 0;
     bool in_order = false;
     card* temp = NULL;
+    unsigned int num_piles = MIN_NUM_PILES;
 
     if (!deck) return -1;
 
     while (!in_order)
     {
         temp = NULL;
-        // create a "ring buffer" to keep track of the references to the head + tails of piles of cards
+        // create a "ring buffer" to keep track of the references to the head + tails of piles of cards (which are represented as linked lists)
         // first half of the buffer is the heads, second half is the tails
         card* head_tail_buf[num_piles*2];
         memset(head_tail_buf, 0, sizeof(head_tail_buf));
@@ -72,7 +77,7 @@ int shuffle_cards(card* deck, int32_t num_cards, int32_t num_piles)
             }
             else
             {
-                // assign tail
+                // assign tail to first card put into the pile
                 head_tail_buf[pile + num_piles] = deck;
             }
             head_tail_buf[pile] = deck;
@@ -105,59 +110,63 @@ int shuffle_cards(card* deck, int32_t num_cards, int32_t num_piles)
             }
             temp = temp->next;
         }
+        num_piles = (num_piles == MAX_NUM_PILES) ? MIN_NUM_PILES : (num_piles + 1);
     }
     return rounds;
 }
 
 int main(int argc, char** argv)
 {
-    // Use signed integers to catch if user inputted negative numbers as arguments
-    int32_t num_cards;
-    int32_t num_piles;
+    // Assuming the deck cannot contain more than 52 cards, uint8_t is sufficient to store all deck values
+    uint8_t num_cards;
     int c = 0;
+    int ncards;
     card* deck;
     card* temp;
     unsigned long nrounds;
 
     if (argc == 1)
     {
-        printf("Usage: %s -N <number of cards> -Y <number of piles>\n", argv[0]);
+        printf("Usage: %s -N <number of cards>\n", argv[0]);
         return -1;
     }
-
-    while ((c = getopt(argc, argv, "N:Y:")) != - 1)
+    while ((c = getopt(argc, argv, "N:")) != - 1)
     {
         switch(c) {
         case 'N':
-            num_cards = atoi(optarg);
-            break;
-        case 'Y':
-            num_piles = atoi(optarg);
+            ncards = atoi(optarg);
+            if (ncards <= 0)
+            {
+                printf("Number of cards must be greater than zero\n");
+                return EXIT_FAILURE;
+            }
+            if (ncards > MAX_DECK_SIZE)
+            {
+                printf("Number of cards cannot exceed %d\n", MAX_DECK_SIZE);
+                return EXIT_FAILURE;
+            }
+            num_cards = (uint8_t)ncards;
+            printf("num_cards %u\n", num_cards);
             break;
         default:
             return EXIT_FAILURE;
         }
     }
 
-    if (num_cards <= 0 || num_piles <= 0)
-    {
-        printf("Number of cards and piles must be greater than zero\n");
-        return EXIT_FAILURE;
-    }
-    else if (num_cards < num_piles)
-    {
-        printf("Number of cards must be greater than or equal to number of piles\n");
-        return EXIT_FAILURE;
-    }
-    else if (num_cards == num_piles)
-    {
-        printf("Number of rounds to return to original order: %d\n", num_cards);
-        return EXIT_SUCCESS;
-    }
+    // if (num_cards <= 0)
+    // {
+    //     printf("Number of cards must be greater than zero\n");
+    //     return EXIT_FAILURE;
+    // }
+    // if (num_cards > MAX_DECK_SIZE)
+    // {
+    //     printf("Number of cards must be greater than zero\n");
+    //     return EXIT_FAILURE;
+    // }
 
     deck = make_deck(num_cards);
 
-    nrounds = shuffle_cards(deck, num_cards, num_piles);
+    nrounds = shuffle_cards(deck, num_cards);
     printf("Number of rounds = %lu\n", nrounds);
 
     // free memory
