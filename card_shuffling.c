@@ -10,9 +10,6 @@ static unsigned long num_piles;
 
 typedef struct card card;
 
-double times[2];
-struct timeval timeCounter;
-
 card* make_card(int val);
 card* make_deck(void);
 int shuffle_cards(card* deck);
