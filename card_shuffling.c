@@ -12,8 +12,8 @@
 typedef struct card card;
 
 card* make_card(int val);
-card* make_deck(int32_t num_cards);
-int shuffle_cards(card* deck, int32_t num_cards);
+card* make_deck(uint8_t num_cards);
+unsigned long shuffle_cards(card* deck, uint8_t num_cards);
 
 struct card
 {
@@ -31,7 +31,7 @@ card* make_card(int val)
     return c;
 }
 
-card* make_deck(int32_t num_cards)
+card* make_deck(uint8_t num_cards)
 {
     card* deck = NULL;
     card* temp = NULL;
@@ -49,7 +49,7 @@ card* make_deck(int32_t num_cards)
     return deck;
 }
 
-int shuffle_cards(card* deck, int32_t num_cards)
+unsigned long shuffle_cards(card* deck, uint8_t num_cards)
 {
     unsigned long rounds = 0;
     bool in_order = false;
@@ -120,7 +120,7 @@ int main(int argc, char** argv)
     // Assuming the deck cannot contain more than 52 cards, uint8_t is sufficient to store all deck values
     uint8_t num_cards;
     int c = 0;
-    int ncards;
+    unsigned int ncards;
     card* deck;
     card* temp;
     unsigned long nrounds;
@@ -146,23 +146,17 @@ int main(int argc, char** argv)
                 return EXIT_FAILURE;
             }
             num_cards = (uint8_t)ncards;
-            printf("num_cards %u\n", num_cards);
             break;
         default:
             return EXIT_FAILURE;
         }
     }
 
-    // if (num_cards <= 0)
-    // {
-    //     printf("Number of cards must be greater than zero\n");
-    //     return EXIT_FAILURE;
-    // }
-    // if (num_cards > MAX_DECK_SIZE)
-    // {
-    //     printf("Number of cards must be greater than zero\n");
-    //     return EXIT_FAILURE;
-    // }
+    if (num_cards == 1)
+    {
+        printf("Number of rounds = 1\n");
+        return EXIT_SUCCESS;
+    }
 
     deck = make_deck(num_cards);
 
