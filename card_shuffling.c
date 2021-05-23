@@ -25,7 +25,8 @@ struct card
 
 card* make_card(int val)
 {
-    card* c = malloc(sizeof(card));
+    card* c;
+    c = malloc(sizeof(card));
     c->val = val;
     c->next = NULL;
     return c;
@@ -42,7 +43,7 @@ card* make_deck(void)
     // put the cards into a deck
     for (int i = 1; i < num_cards; i++)
     {
-        card* c = make_card(i+1);
+        c = make_card(i+1);
         temp->next = c;
         temp = c;
     }
@@ -51,13 +52,15 @@ card* make_deck(void)
 
 int shuffle_cards(card* deck)
 {
-    if (!deck) return -1;
     unsigned long rounds = 0;
     bool in_order = false;
+    card* temp = NULL;
+
+    if (!deck) return -1;
 
     while (!in_order)
     {
-        card* temp = NULL;
+        temp = NULL;
         // create a "ring buffer" to keep track of the references to the head + tails of piles of cards
         // first half of the buffer is the heads, second half is the tails
         card* head_tail_buf[num_piles*2];
@@ -113,13 +116,17 @@ int shuffle_cards(card* deck)
 
 int main(int argc, char** argv)
 {
+    int c = 0;
+    card* deck;
+    unsigned long nrounds;
+    card* temp;
+
     if (argc == 1)
     {
         printf("Usage: %s -N <number of cards> -Y <number of piles>\n", argv[0]);
         return -1;
     }
 
-    int c = 0;
     while ((c = getopt(argc, argv, "N:Y:")) != - 1)
     {
         switch(c) {
@@ -150,13 +157,13 @@ int main(int argc, char** argv)
         return EXIT_SUCCESS;
     }
 
-    card* deck = make_deck();
+    deck = make_deck();
 
-    unsigned long nrounds = shuffle_cards(deck);
+    nrounds = shuffle_cards(deck);
     printf("Number of rounds = %lu\n", nrounds);
 
     // free memory
-    card* temp = deck;
+    temp = deck;
     while (temp)
     {
         card* t2 = temp;
