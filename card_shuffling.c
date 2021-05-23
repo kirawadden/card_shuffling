@@ -1,38 +1,14 @@
-// =======================
-// Question 1
-
-// You are given a deck containing N cards.  While holding the deck facedown:
-
-// 1. Deal all the cards facedown onto a table into Y piles like you would if you were playing with a group of people (i.e. card 1 to P1, card 2 to P2, ..., card Y to PY, card Y + 1 to P1, etc).
-// 2. Combine all the piles into a deck by placing P1 onto P2, then P1+P2 onto P3, and so on. This is a round.
-// 3. Pick up the deck from the table and repeat steps 1-2 until the deck is in the original order.
-// 4. For each round, vary the pile count according to a repeating pattern. Start with 3 piles, then 4, then 5, then loop back to 3, then 4 and so on.
-
-// Write a program to determine how many rounds it will take to put a deck back into the original order.  This will involve creating a data structure to represent the order of the cards. Do not use an array. This program should be written in C only. It should take a number of cards in the deck as a command line argument and write the result to stdout.  Please ensure the program compiles and runs correctly (no pseudo-code).  This isn't a trick question; it should be fairly straightforward.
-
-// Bonus: Output how many rounds should be completed before the deck is adequately shuffled from the original deck for a person who is casually playing a game with cards. Provide your methodology in a comment block.
-
-// =======================
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdbool.h>
-#include <signal.h>
 
 static unsigned long num_cards;
 static unsigned long num_piles;
 
 typedef struct node node;
-
-unsigned long rounds = 0;
-
-void handler(int i)
-{
-    printf("Rounds completed %lu\n", rounds);
-    exit(1);
-}
 
 struct node
 {
@@ -40,10 +16,33 @@ struct node
     node* next;
 };
 
+node* make_deck(void)
+{
+    node* head = NULL;
+    node* temp = NULL;
+
+    // put the cards into a deck
+    for (int i = 0; i < num_cards; i++)
+    {
+        node* card = malloc(sizeof(node));
+        card->val = i+1;
+        card->next = NULL;
+        if (i == 0)
+        {
+            head = card;
+            temp = card;
+            continue;
+        }
+        temp->next = card;
+        temp = card;
+    }
+    return head;
+}
+
 int shuffle_cards(node* head)
 {
     if (!head) return -1;
-    // static unsigned long rounds = 0;
+    unsigned long rounds = 0;
     bool in_order = false;
 
     while (!in_order)
@@ -87,8 +86,7 @@ int shuffle_cards(node* head)
         rounds++;
         temp = head;
 
-        // sanity check - cards should only be in order once card 1 is back on top of the pile
-        // iterate through all cards to check
+        // sanity check - iterate through all cards to check if they're in order
         for (int i = 0; i < num_cards; i++)
         {
             if (temp->val == (i+1)) in_order = true;
@@ -101,7 +99,6 @@ int shuffle_cards(node* head)
         }
     }
     return rounds;
-
 }
 
 int main(int argc, char** argv)
@@ -144,77 +141,19 @@ int main(int argc, char** argv)
         return 0;
     }
 
-    signal(SIGINT, handler);
+    node* deck = make_deck();
 
-    node* head = NULL;
-    node* temp = NULL;
-
-    // put the cards into a deck
-    for (int i = 0; i < num_cards; i++)
-    {
-        node* card = malloc(sizeof(node));
-        card->val = i+1;
-        card->next = NULL;
-        if (i == 0)
-        {
-            head = card;
-            temp = card;
-            continue;
-        }
-        temp->next = card;
-        temp = card;
-    }
-    unsigned long nrounds = shuffle_cards(head);
+    unsigned long nrounds = shuffle_cards(deck);
+    printf("Number of rounds = %lu\n", nrounds);
 
     // free memory
-    temp = head;
+    node* temp = deck;
     while (temp != NULL)
     {
         node* t2 = temp;
-        // printf("%d\n", temp->val);
         temp = temp->next;
         free(t2);
     }
 
-    printf("Number of rounds = %lu\n", nrounds);
     return 0;
 }
-
-// node* h1 = NULL;
-// node* h2 = NULL;
-// node* h3 = NULL;
-
-// while (head != NULL)
-// {
-//     if (pile == 0)
-//     {
-//         if (h1 != NULL)
-//         {
-//             temp = h1;
-//         }
-//         h1 = head;
-//         head = head->next;
-//         h1->next = temp;
-//     }
-//     else if (pile == 1)
-//     {
-//         if (h2 != NULL)
-//         {
-//             temp = h2;
-//         }
-//         h2 = head;
-//         head = head->next;
-//         h2-> next = temp;
-//     }
-//     else
-//     {
-//         if (h3 != NULL)
-//         {
-//             temp = h3;
-//         }
-//         h3 = head;
-//         head = head->next;
-//         h3->next = temp;
-//     }
-//     pile = (pile + 1) % num_piles;
-// }
